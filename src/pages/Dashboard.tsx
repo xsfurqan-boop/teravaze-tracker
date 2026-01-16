@@ -19,9 +19,11 @@ export function Dashboard() {
     const { isExpired, isPremium } = useTrial();
 
     useEffect(() => {
-        fetchTasks();
-        fetchProjects();
-    }, [fetchTasks, fetchProjects]);
+        if (user) {
+            fetchTasks();
+            fetchProjects();
+        }
+    }, [user, fetchTasks, fetchProjects]);
 
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedPriority, setSelectedPriority] = useState('All Priorities');
@@ -262,7 +264,7 @@ export function Dashboard() {
             {/* Modals */}
             <TaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />
             <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} />
-            <div className="absolute bottom-2 right-4 text-xs text-gray-600 font-mono">v1.2 - Schema Fix</div>
+            <div className="absolute bottom-2 right-4 text-xs text-gray-600 font-mono">v1.3 - Auth Sync Fix</div>
         </div>
     );
 }
