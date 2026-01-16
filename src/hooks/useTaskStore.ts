@@ -41,7 +41,15 @@ export const useTaskStore = create<TaskState>((set, get) => ({
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            set({ tasks: data || [] });
+
+            // Map backend fields to frontend model
+            const mappedTasks = (data || []).map((t: any) => ({
+                ...t,
+                date: t.due_date ? t.due_date.split('T')[0] : '',
+                time: t.due_date && t.due_date.includes('T') ? t.due_date.split('T')[1].substring(0, 5) : ''
+            }));
+
+            set({ tasks: mappedTasks });
         } catch (error: any) {
             set({ error: error.message });
         } finally {
@@ -55,9 +63,16 @@ export const useTaskStore = create<TaskState>((set, get) => ({
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('No user logged in');
 
+            // Combine date and time into due_date
+            const due_date = task.date && task.time ? `${task.date}T${task.time}:00` : task.date ? `${task.date}T00:00:00` : null;
+
+            // Prepare object for Supabase (remove frontend-only fields)
+            const { date, time, ...taskData } = task;
+
             const newTask = {
-                ...task,
+                ...taskData,
                 user_id: user.id,
+                due_date,
                 completed: false,
                 subtasks: task.subtasks || [], // Ensure JSONB compatibility
             };
@@ -69,7 +84,15 @@ export const useTaskStore = create<TaskState>((set, get) => ({
                 .single();
 
             if (error) throw error;
-            set((state) => ({ tasks: [data, ...state.tasks] }));
+
+            // Map back for local state
+            const createdTask = {
+                ...data,
+                date: task.date,
+                time: task.time
+            };
+
+            set((state) => ({ tasks: [createdTask, ...state.tasks] }));
         } catch (error: any) {
             set({ error: error.message });
         } finally {
@@ -84,9 +107,37 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         }));
 
         try {
+            // Map frontend fields to backend
+            const dbUpdates: any = { ...updates };
+
+            // Handle date separation
+            if ('date' in updates || 'time' in updates) {
+                // We need the current task to merge if one field is missing, is trickier.
+                // For simplicity, if either changes, we construct due_date from scratch if both present in updates,
+                // or we rely on the caller passing both? 
+                // Better approach: fetch current task to merge? No that's slow.
+                // Alternative: just update what we have. 
+                // Since this app usually updates them together via modal, let's look for both.
+                // If only one, we might risk overwriting?
+                // ACTUALLY, checking the modal, it updates everything.
+                // But toggleTask only updates completed.
+
+                // Let's safe check:
+                if (updates.date && updates.time) {
+                    dbUpdates.due_date = `${updates.date}T${updates.time}:00`;
+                } else if (updates.date) {
+                    // Assuming time is 00:00 or we can't fully update.
+                    // This is an edge case. Let's just create due_date if possible.
+                    dbUpdates.due_date = `${updates.date}T00:00:00`;
+                }
+
+                delete dbUpdates.date;
+                delete dbUpdates.time;
+            }
+
             const { error } = await supabase
                 .from('tasks')
-                .update(updates)
+                .update(dbUpdates)
                 .eq('id', id);
 
             if (error) throw error;

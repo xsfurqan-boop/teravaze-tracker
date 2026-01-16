@@ -40,7 +40,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            set({ projects: data || [] });
+
+            // Map DB snake_case to Frontend camelCase
+            const mappedProjects = (data || []).map((p: any) => ({
+                ...p,
+                startDate: p.start_date,
+                endDate: p.end_date,
+                teamMembers: p.team_members || []
+            }));
+
+            set({ projects: mappedProjects });
         } catch (error: any) {
             set({ error: error.message });
         } finally {
@@ -54,14 +63,33 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('No user logged in');
 
+            // Map Frontend camelCase to DB snake_case
+            const { startDate, endDate, teamMembers, ...rest } = project;
+            const dbProject = {
+                ...rest,
+                start_date: startDate,
+                end_date: endDate,
+                team_members: teamMembers,
+                user_id: user.id
+            };
+
             const { data, error } = await supabase
                 .from('projects')
-                .insert([{ ...project, user_id: user.id }])
+                .insert([dbProject])
                 .select()
                 .single();
 
             if (error) throw error;
-            set((state) => ({ projects: [data, ...state.projects] }));
+
+            // Map back to frontend model for state update
+            const newProject = {
+                ...data,
+                startDate: project.startDate,
+                endDate: project.endDate,
+                teamMembers: project.teamMembers
+            };
+
+            set((state) => ({ projects: [newProject, ...state.projects] }));
         } catch (error: any) {
             set({ error: error.message });
         } finally {
@@ -76,9 +104,24 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         }));
 
         try {
+            // Map updates to DB keys
+            const dbUpdates: any = { ...updates };
+            if ('startDate' in updates) {
+                dbUpdates.start_date = updates.startDate;
+                delete dbUpdates.startDate;
+            }
+            if ('endDate' in updates) {
+                dbUpdates.end_date = updates.endDate;
+                delete dbUpdates.endDate;
+            }
+            if ('teamMembers' in updates) {
+                dbUpdates.team_members = updates.teamMembers;
+                delete dbUpdates.teamMembers;
+            }
+
             const { error } = await supabase
                 .from('projects')
-                .update(updates)
+                .update(dbUpdates)
                 .eq('id', id);
 
             if (error) throw error;
