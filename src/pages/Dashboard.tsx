@@ -264,7 +264,6 @@ export function Dashboard() {
             {/* Modals */}
             <TaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />
             <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} />
-            <div className="absolute bottom-2 right-4 text-xs text-gray-600 font-mono">v1.4 - Missing Col Fix</div>
         </div>
     );
 }
