@@ -102,7 +102,17 @@ export function Team() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto pb-20 max-h-[calc(100vh-150px)]">
-                {members.map((m) => (
+                {useTeamStore.getState().error ? (
+                    <div className="col-span-full flex flex-col items-center justify-center h-64 text-red-400 gap-2">
+                        <p className="font-bold">Error loading team</p>
+                        <p className="text-sm border border-red-500/20 bg-red-500/10 p-2 rounded">{useTeamStore.getState().error}</p>
+                        <button onClick={() => fetchMembers()} className="text-xs bg-white/10 px-3 py-1 rounded hover:bg-white/20 mt-2 text-white">Retry</button>
+                    </div>
+                ) : members.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center h-64 text-gray-400">
+                        <p>No team members yet.</p>
+                    </div>
+                ) : members.map((m) => (
                     <GlassCard key={m.id} onClick={() => handleEdit(m)} className="p-0 overflow-hidden hover:translate-y-[-4px] transition-transform cursor-pointer relative group flex flex-col">
                         {/* Header Gradient */}
                         <div className="h-20 bg-gradient-to-r from-gray-800 to-gray-700 relative">

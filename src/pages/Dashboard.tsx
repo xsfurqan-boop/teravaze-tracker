@@ -7,7 +7,7 @@ import { useTrial } from '../hooks/useTrial';
 import { TaskModal } from '../components/TaskModal';
 import { PremiumModal } from '../components/PremiumModal';
 import { TaskCard } from '../components/TaskCard';
-import { Plus, Layout, Folder, Calendar as CalendarIcon, DollarSign, Filter } from 'lucide-react';
+import { Plus, Layout, Folder, Calendar as CalendarIcon, DollarSign, Filter, AlertTriangle } from 'lucide-react';
 
 const categories = ['All', 'Work', 'Personal', 'Design', 'Meeting', 'Dev'];
 const priorities = ['All Priorities', 'Critical', 'High', 'Normal', 'Low'];
@@ -175,8 +175,24 @@ export function Dashboard() {
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto px-8 pb-32 custom-scrollbar">
 
-                {/* Empty State */}
-                {!hasItems && (
+                {/* Error State */}
+                {(useTaskStore.getState().error || useProjectStore.getState().error) ? (
+                    <div className="flex flex-col items-center justify-center pt-20 text-center text-red-400 gap-4">
+                        <div className="p-4 bg-red-500/10 rounded-full border border-red-500/20">
+                            <AlertTriangle className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-xl font-bold">Unable to Load Data</h3>
+                        <div className="max-w-md text-sm border border-red-500/20 bg-red-500/10 p-3 rounded-xl">
+                            {useTaskStore.getState().error || useProjectStore.getState().error}
+                        </div>
+                        <button
+                            onClick={() => { fetchTasks(); fetchProjects(); }}
+                            className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-xl text-white font-medium transition-all"
+                        >
+                            Retry Connection
+                        </button>
+                    </div>
+                ) : !hasItems && (
                     <div className="flex flex-col items-center justify-center pt-20 text-center opacity-50">
                         <Folder className="w-16 h-16 text-gray-600 mb-4" />
                         <h3 className="text-xl font-bold text-white mb-2">No Items Found</h3>
@@ -246,6 +262,7 @@ export function Dashboard() {
             {/* Modals */}
             <TaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />
             <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} />
+            <div className="absolute bottom-2 right-4 text-xs text-gray-600 font-mono">v1.1 - Debug Mode</div>
         </div>
     );
 }

@@ -42,35 +42,55 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
         setSubtasks(subtasks.filter(st => st.id !== id));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!title || !date) return;
 
-        addTask({
-            title,
-            description,
-            date,
-            time,
-            priority,
-            status,
-            assignee: assignee || undefined,
-            tags: selectedTags,
-            subtasks,
-            category: 'Work' // Default for now
-        });
+        try {
+            await addTask({
+                title,
+                description,
+                date,
+                time,
+                priority,
+                status,
+                assignee: assignee || undefined,
+                tags: selectedTags,
+                subtasks,
+                category: 'Work' // Default for now
+            });
 
-        // Reset
-        setTitle('');
-        setDescription('');
-        setDate('');
-        setTime('');
-        setPriority('Normal');
-        setStatus('To Do');
-        setAssignee('');
-        setSelectedTags([]);
-        setSubtasks([]);
-        showToast('Task created successfully!', 'success');
-        onClose();
+            // Check if there was an error in the store after the operation
+            // (Wait, Zustand async actions usually don't throw if handled internally, 
+            // but our store usage sets 'error' state. Better to modify store to throw or check state.)
+            // Actually, the best practice with this store pattern is to check useTaskStore.getState().error
+            // or modify the store to return the error.
+            // Let's rely on the store throwing if we modify it, but currently it catches internally.
+
+            // Re-reading useTaskStore: it sets { error: error.message } on failure.
+            // So we should check that.
+
+            const error = useTaskStore.getState().error;
+            if (error) {
+                showToast(error, 'error');
+                return;
+            }
+
+            // Reset
+            setTitle('');
+            setDescription('');
+            setDate('');
+            setTime('');
+            setPriority('Normal');
+            setStatus('To Do');
+            setAssignee('');
+            setSelectedTags([]);
+            setSubtasks([]);
+            showToast('Task created successfully!', 'success');
+            onClose();
+        } catch (err) {
+            showToast('Failed to create task', 'error');
+        }
     };
 
     const toggleTag = (tag: string) => {

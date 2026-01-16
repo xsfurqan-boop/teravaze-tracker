@@ -54,7 +54,7 @@ export function Projects() {
         setIsModalOpen(true);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!title || !startDate || !endDate) return;
 
         // Auto assign color based on status (simplified logic for now)
@@ -81,13 +81,25 @@ export function Projects() {
             bg
         };
 
-        if (editingId) {
-            updateProject(editingId, projectData);
-        } else {
-            addProject(projectData);
-        }
+        try {
+            if (editingId) {
+                await updateProject(editingId, projectData);
+            } else {
+                await addProject(projectData);
+            }
 
-        setIsModalOpen(false);
+            // Check for store errors
+            const error = useProjectStore.getState().error;
+            if (error) {
+                alert(`Error: ${error}`); // Using alert as toast hook isn't imported here yet
+                return;
+            }
+
+            setIsModalOpen(false);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to save project');
+        }
     };
 
     const toggleTeamMember = (name: string) => {
@@ -124,7 +136,17 @@ export function Projects() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-20 max-h-[calc(100vh-150px)]">
-                {projects.map((p) => (
+                {useProjectStore.getState().error ? (
+                    <div className="col-span-full flex flex-col items-center justify-center h-64 text-red-400 gap-2">
+                        <p className="font-bold">Error loading projects</p>
+                        <p className="text-sm border border-red-500/20 bg-red-500/10 p-2 rounded">{useProjectStore.getState().error}</p>
+                        <button onClick={() => fetchProjects()} className="text-xs bg-white/10 px-3 py-1 rounded hover:bg-white/20 mt-2 text-white">Retry</button>
+                    </div>
+                ) : projects.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center h-64 text-gray-400">
+                        <p>No projects yet.</p>
+                    </div>
+                ) : projects.map((p) => (
                     <GlassCard key={p.id} className="p-6 flex flex-col justify-between hover:translate-y-[-4px] transition-transform cursor-pointer relative group min-h-[250px]">
 
                         {/* Action Buttons */}

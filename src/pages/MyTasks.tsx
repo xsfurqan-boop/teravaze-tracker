@@ -54,7 +54,13 @@ export function MyTasks() {
                 </div>
             ) : (
                 <GlassCard className="h-[calc(100%-100px)] overflow-y-auto custom-scrollbar">
-                    {tasks.length === 0 ? (
+                    {useTaskStore.getState().error ? (
+                        <div className="flex flex-col items-center justify-center h-full text-red-400 gap-2">
+                            <p className="font-bold">Error loading tasks</p>
+                            <p className="text-sm border border-red-500/20 bg-red-500/10 p-2 rounded">{useTaskStore.getState().error}</p>
+                            <button onClick={() => fetchTasks()} className="text-xs bg-white/10 px-3 py-1 rounded hover:bg-white/20 mt-2 text-white">Retry</button>
+                        </div>
+                    ) : tasks.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-400">
                             <p>No tasks yet. Create one from the Dashboard!</p>
                         </div>
